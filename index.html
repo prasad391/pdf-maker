@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet Maker – Folder to print-sheet PDF</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <section class="controls">
+    <h1>Sheet Maker</h1>
+    <p class="sub">Pick a folder of images. Get a print-ready PDF with equal-split layouts and cut marks.</p>
+
+    <label class="field">
+      <span>1. Image folder</span>
+      <input type="file" id="folder" webkitdirectory multiple>
+      <small id="folderInfo">No folder selected</small>
+    </label>
+
+    <h3>2. Sheet</h3>
+    <div class="row">
+      <label class="field">
+        <span>Sheet size</span>
+        <select id="sheet">
+          <option value="13x19" selected>13 × 19 in</option>
+          <option value="12x18">12 × 18 in</option>
+          <option value="11x17">11 × 17 in (Tabloid)</option>
+          <option value="a3plus">A3+ (329 × 483 mm)</option>
+          <option value="a3">A3 (297 × 420 mm)</option>
+          <option value="a4">A4 (210 × 297 mm)</option>
+          <option value="letter">Letter (8.5 × 11 in)</option>
+          <option value="custom">Custom size…</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Orientation</span>
+        <select id="orient">
+          <option value="portrait" selected>Portrait (tall)</option>
+          <option value="landscape">Landscape (wide)</option>
+        </select>
+      </label>
+    </div>
+    <div class="row" id="customRow" hidden>
+      <label class="field"><span>Width (in)</span><input type="number" id="customW" value="13" min="3" max="60" step="0.01"></label>
+      <label class="field"><span>Height (in)</span><input type="number" id="customH" value="19" min="3" max="60" step="0.01"></label>
+    </div>
+
+    <h3>3. Layout</h3>
+    <div class="row">
+      <label class="field">
+        <span>Images per page</span>
+        <select id="layout"></select>
+        <small>Grid is columns × rows</small>
+      </label>
+      <label class="field">
+        <span>Copies of each image</span>
+        <input type="number" id="copies" value="1" min="1" max="50" step="1">
+      </label>
+    </div>
+    <div class="row">
+      <label class="field">
+        <span>Image fit</span>
+        <select id="fit">
+          <option value="fit" selected>Fit inside cell (nothing cropped)</option>
+          <option value="fill">Fill cell (crops the edges)</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Fill order</span>
+        <select id="order">
+          <option value="row" selected>Row by row</option>
+          <option value="column">Column by column</option>
+        </select>
+      </label>
+    </div>
+    <label class="check">
+      <input type="checkbox" id="rotate" checked>
+      Auto-rotate images 90° when it fits the cell better
+    </label>
+
+    <h3>4. Spacing and cut marks</h3>
+    <div class="row">
+      <label class="field">
+        <span>Outer margin (in)</span>
+        <input type="number" id="margin" value="0.5" min="0.25" max="2" step="0.05">
+      </label>
+      <label class="field">
+        <span>Gap between images (in)</span>
+        <input type="number" id="gap" value="0" min="0" max="1" step="0.05">
+      </label>
+    </div>
+    <div class="row">
+      <label class="field">
+        <span>Cut marks</span>
+        <select id="marks">
+          <option value="on" selected>On</option>
+          <option value="off">Off</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Mark distance from image (in)</span>
+        <input type="number" id="markGap" value="0.02" min="0" max="0.25" step="0.01">
+      </label>
+    </div>
+
+    <h3>5. Quality</h3>
+    <label class="field">
+      <span>Image quality in the PDF</span>
+      <select id="quality">
+        <option value="original" selected>Original (no quality loss)</option>
+        <option value="high">High – 300 DPI, JPEG 95%</option>
+        <option value="medium">Medium – 200 DPI, JPEG 85%</option>
+        <option value="low">Low (draft) – 100 DPI, JPEG 70%</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <small id="dpiInfo"></small>
+    </label>
+    <div class="row" id="qualityRow" hidden>
+      <label class="field"><span>Max DPI</span><input type="number" id="qDpi" value="300" min="50" max="1200" step="10"></label>
+      <label class="field"><span>JPEG quality (%)</span><input type="number" id="qJpeg" value="90" min="30" max="100" step="1"></label>
+    </div>
+
+    <button id="make" disabled>Create PDF</button>
+    <button id="cancel" class="secondary" hidden>Cancel</button>
+    <progress id="bar" value="0" max="100" hidden></progress>
+    <p id="status" role="status"></p>
+    <a id="again" hidden>Download didn't start? Click here to save the PDF.</a>
+  </section>
+
+  <section class="preview">
+    <h2 id="previewTitle">Page preview</h2>
+    <div id="pages"></div>
+    <p class="note" id="previewNote">Red lines are the cut marks. The PDF uses the quality you choose; this preview uses small thumbnails.</p>
+  </section>
+</main>
+
+<script src="lib/pdf-lib.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
