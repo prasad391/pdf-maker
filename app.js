@@ -90,7 +90,10 @@ function checkBrowser() {
 
 // ---------- Settings (always read through this, values are clamped) ----------
 function readSettings() {
-  const [cols, rows] = el.layout.value.split("x").map(Number);
+  const isCard = el.layout.value === "card5x5";
+  const [cols, rows] = isCard ? [5, 5] : el.layout.value.split("x").map(Number);
+  // fixed cell size in points (null = normal equal-split layout)
+  const cellFixed = isCard ? { w: (54 / 25.4) * PT, h: (86 / 25.4) * PT } : null;
 
   let wIn, hIn, tag;
   if (el.sheet.value === "custom") {
@@ -116,9 +119,9 @@ function readSettings() {
   return {
     W: (landscape ? longSide : shortSide) * PT,
     H: (landscape ? shortSide : longSide) * PT,
-    tag, cols, rows,
+    tag, cols, rows, cellFixed,
     marginPt: clampNum(el.margin, 0.25, Math.min(2, shortSide / 4), 0.5) * PT,
-    gapPt: clampNum(el.gap, 0, 1, 0) * PT,
+    gapPt: (clampNum(el.gap, 0, 25, 2) / 25.4) * PT,   // gap is entered in mm
     fit: el.fit.value === "fill" ? "fill" : "fit",
     order: el.order.value === "column" ? "column" : "row",
     autoRotate: el.rotate.checked,
@@ -134,7 +137,7 @@ function normalizeInputs() {
   const S = readSettings();
   el.copies.value = S.copies;
   el.margin.value = fmt(S.marginPt / PT);
-  el.gap.value = fmt(S.gapPt / PT);
+  el.gap.value = fmt((S.gapPt / PT) * 25.4);   // show back in mm
   el.markGap.value = fmt(S.markGapPt / PT);
   if (el.sheet.value === "custom") {
     el.customW.value = fmt(clampNum(el.customW, 3, 60, 13));
@@ -155,15 +158,29 @@ function buildSequence(S) {
 
 // ---------- Geometry (origin = top-left, units = points) ----------
 function getCells(S) {
-  const cellW = (S.W - 2 * S.marginPt - S.gapPt * (S.cols - 1)) / S.cols;
-  const cellH = (S.H - 2 * S.marginPt - S.gapPt * (S.rows - 1)) / S.rows;
-  if (cellW < PT * 0.5 || cellH < PT * 0.5) return null;      // no room for images
+  let cellW, cellH, offX = S.marginPt, offY = S.marginPt;
+
+  if (S.cellFixed) {
+    // fixed-size cells, whole grid centred on the sheet
+    cellW = S.cellFixed.w;
+    cellH = S.cellFixed.h;
+    const gridW = cellW * S.cols + S.gapPt * (S.cols - 1);
+    const gridH = cellH * S.rows + S.gapPt * (S.rows - 1);
+    if (gridW > S.W - 2 * S.marginPt + 0.01 || gridH > S.H - 2 * S.marginPt + 0.01) return null;
+    offX = (S.W - gridW) / 2;
+    offY = (S.H - gridH) / 2;
+  } else {
+    cellW = (S.W - 2 * S.marginPt - S.gapPt * (S.cols - 1)) / S.cols;
+    cellH = (S.H - 2 * S.marginPt - S.gapPt * (S.rows - 1)) / S.rows;
+    if (cellW < PT * 0.5 || cellH < PT * 0.5) return null;    // no room for images
+  }
+
   const cells = [];
   for (let r = 0; r < S.rows; r++) {
     for (let c = 0; c < S.cols; c++) {
       cells.push({
-        x: S.marginPt + c * (cellW + S.gapPt),
-        y: S.marginPt + r * (cellH + S.gapPt),
+        x: offX + c * (cellW + S.gapPt),
+        y: offY + r * (cellH + S.gapPt),
         w: cellW, h: cellH, r, c,
       });
     }
@@ -710,6 +727,11 @@ el.make.addEventListener("click", async () => {
     if (c === 2 && r === 2) o.selected = true;
     el.layout.appendChild(o);
   });
+  // fixed-size portrait cards: 5.4 cm wide x 8.6 cm tall, 5 x 5 = 25 per page
+  const card = document.createElement("option");
+  card.value = "card5x5";
+  card.textContent = "25 per page – 5 × 5 (portrait cards 5.4 × 8.6 cm)";
+  el.layout.appendChild(card);
   el.folderInfo = $("folderInfo");
   checkBrowser();
   drawPreview();
